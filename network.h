@@ -5,19 +5,20 @@
 #include <string>
 #include <random>
 #include <assert.h>
+#include <cfloat>
 #include "func.h"
 
 class BP {
 public:
-    BP(){}
+    //BP(){}
     BP(vector<int> l);
 
-    void set_train_data(vector<vector<double>>, vector<vector<double>>);
-    void set_test_data(vector<vector<double>>, vector<vector<double>>);
-    void train(int _batch=10, int _max_itr_all=10, int _max_itr_batch=100,
-               double _learning_rate=0.01, string _GD="SGD", string _activation="sigmoid",
-               bool verbose=true);
-    void predict(bool verbose=true);
+    void set_train_data(vector<vector<double>>, vector<vector<double>>, double r=0.8);
+    //void set_test_data(vector<vector<double>>, vector<vector<double>>);
+    void train(int _batch=10, int _max_itr_all=1, int _max_itr_batch=100,
+               double _learning_rate=0.01, double _min_loss=0.1, string _GD="SGD", string _activation="sigmoid",
+               bool _verbose=true);
+    void predict(bool _verbose=true);
     void data_normalization();
 
     void set_X(vector<double>);
@@ -32,6 +33,11 @@ public:
 public:
     void forword_flow();
     void backword_flow();
+    void bf_output_hidden1();
+    void bf_hidden1_hidden2();
+    void bf_hidden2_input();
+    void get_loss();
+
     void update_weights_bias();
     void init_weights_bias();
     double active(double);
@@ -56,6 +62,8 @@ private:
     int get_w_start(int);
     int get_b_start(int);
 
+    int get_layer_neurals(int);
+
     int n_layers;
 
     int batch;
@@ -63,6 +71,8 @@ private:
     int max_itr_batch;
     double learning_rate;
     double min_loss;
+    double cur_loss;
+    bool verbose;
 
     string GD;
     string activation = string("ReLu");
