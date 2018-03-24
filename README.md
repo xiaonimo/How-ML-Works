@@ -10,4 +10,4 @@
 - [x] data_normalization()
 
 ### 2018.3.24
-- [] improve the accuracy while using Mini-BGD
+- [ ] improve the accuracy while using Mini-BGD
