@@ -18,4 +18,5 @@ void print(vector<T> x) {
 void read_mnist(vector<vector<double>>&, vector<vector<double>>&, string);
 
 void data_normal(vector<vector<double>>&);
+
 #endif // FUNC_H
