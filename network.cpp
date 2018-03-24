@@ -16,7 +16,7 @@ BP::BP(vector<int> l){
         y_index[i] = i?y_index[i-1]+layers[i-1]+layers[i]:layers[0];
         if (i == 1 || i==0) continue;
         w_index[i] = w_index[i-1]+layers[i-2]*layers[i-1];
-        b_index[i] = b_index[i-1]+layers[i];
+        b_index[i] = b_index[i-1]+layers[i-1];
     }
 
     //计算参数数量
@@ -38,6 +38,7 @@ BP::BP(vector<int> l){
 }
 
 void BP::init_weights_bias() {
+    //根据正太分布初始化参数
     mt19937 gen;
     normal_distribution<double> normal(0, 0.001);
 
@@ -65,9 +66,9 @@ void BP::forword_flow() {
     //每一层操作
     for (int cur_layer=0; cur_layer<n_layers-1; ++cur_layer) {
         //获取各个数据的起点
-        int _x_start_next = get_x_start(cur_layer+1);
-        int _y_start_cur = get_y_start(cur_layer);
-        int _w_start_next = get_w_start(cur_layer+1);
+        const int _x_start_next = get_x_start(cur_layer+1);
+        const int _y_start_cur = get_y_start(cur_layer);
+        const int _w_start_next = get_w_start(cur_layer+1);
         //各层的每个神经元操作
         for (int cur_cell=0; cur_cell<layers[cur_layer]; ++cur_cell) {
             //每个神经元对应 不同的权重连接
@@ -92,83 +93,57 @@ void BP::forword_flow() {
 
 void BP::bf_output_hidden1() {
     //输出层与隐含层之间的参数更新
-    int hidden1_layer_size = get_layer_neurals(-2);
-    int output_layer_size = get_layer_neurals(-1);
+    const int hidden1_layer_size = get_layer_neurals(-2);
+    const int output_layer_size = get_layer_neurals(-1);
 
-    int _w_start_output = get_w_start(-1);//最后一层（输出层）对应的权重连接
-    int _b_start_output = get_b_start(-1);
-    int _x_start_output = get_x_start(-1);
-    int _y_start_output = get_y_start(-1);
-    int _y_start_hidden1 = get_y_start(-2);
+    const int _w_start_output = get_w_start(-1);//最后一层（输出层）对应的权重连接
+    const int _b_start_output = get_b_start(-1);
+    const int _x_start_output = get_x_start(-1);
+    const int _y_start_output = get_y_start(-1);
+    const int _y_start_hidden1 = get_y_start(-2);
+    //先计算d_bias
+    for (int output_cell=0; output_cell<output_layer_size; ++output_cell) {
+        d_bias[_b_start_output+output_cell] = (vals[_y_start_output+output_cell]-Y[output_cell])
+                *active_deri(vals[_x_start_output+output_cell]);
+    }
+
     //更新隐含层每个神经元与所有输出层神经元的权重
     for (int hidden1_cell=0; hidden1_cell<hidden1_layer_size; ++hidden1_cell) {
         //隐含层单个神经元与每个输出层神经元相连
         for (int output_cell=0; output_cell<output_layer_size; ++output_cell) {
             int __w_index = _w_start_output + hidden1_cell*output_layer_size + output_cell;
-            int __b_index = _b_start_output + output_cell;
-            d_weights[__w_index] = (vals[_y_start_output+output_cell]-Y[output_cell])
-                    *active_deri(vals[_x_start_output+output_cell])*vals[_y_start_hidden1+hidden1_cell];
-            d_bias[__b_index] = (vals[_y_start_output+output_cell]-Y[output_cell])
-                    *active_deri(vals[_x_start_output+output_cell]);
+            d_weights[__w_index] = d_bias[_b_start_output+output_cell]*vals[_y_start_hidden1+hidden1_cell];
         }
     }
 }
 
-void BP::bf_hidden1_hidden2() {
-    int hidden1_layer_size = get_layer_neurals(-2);
-    int hidden2_layer_size = get_layer_neurals(-3);
-    int output_layer_size  = get_layer_neurals(-1);
-
-    int _y_start_output = get_y_start(-1);
-    int _x_start_output = get_x_start(-1);
-    int _w_start_output = get_w_start(-1);
-    int _b_start_hidden1 = get_b_start(-2);
-    int _w_start_hidden1 = get_w_start(-2);
-    int _x_start_hidden1 = get_x_start(-2);
-    int _y_start_hidden2 = get_y_start(-3);
-
-    //倒数第2隐含层，逐个更新神经元与下一层所有神经元的连接
-    for (int hidden2_cell =0; hidden2_cell<hidden2_layer_size; ++hidden2_cell) {
-        //逐个遍历下一层所有神经元
-        for (int hidden1_cell=0; hidden1_cell<hidden1_layer_size; ++hidden1_cell) {
-            //当前神经元与输出层链接，计算sum((y-Y)*f'(net)*w)
-            double sum = 0.;
-            for (int output_cell=0; output_cell<layers[n_layers-1]; ++output_cell) {
-                sum += (vals[_y_start_output+output_cell]-Y[output_cell])
-                        *active(vals[_x_start_output+output_cell])
-                        *weights[_w_start_output+hidden1_cell*output_layer_size+output_cell];
-            }
-            //获得d_b
-            d_bias[_b_start_hidden1+hidden1_cell] = sum*active_deri(vals[_x_start_hidden1+hidden1_cell]);
-            d_weights[_w_start_hidden1+hidden2_cell*hidden1_layer_size+hidden1_cell]
-                    = d_bias[_b_start_hidden1+hidden1_cell] * vals[_y_start_hidden2+hidden2_cell];
-        }
-    }
-}
-
-void BP::bf_hidden2_input() {
+void BP::bf_hidden1_input() {
     //循环遍历每一层
-    for (int cur_layer=n_layers-3; cur_layer>=0; --cur_layer) {
-        int cur_layer_size = get_layer_neurals(cur_layer);
-        int pre_layer_size = get_layer_neurals(cur_layer-1);
-        int next_layer_size = get_layer_neurals(cur_layer+1);
+    for (int cur_layer=n_layers-2; cur_layer>0; --cur_layer) {
+        const int cur_layer_size = get_layer_neurals(cur_layer);
+        const int pre_layer_size = get_layer_neurals(cur_layer-1);
+        const int next_layer_size = get_layer_neurals(cur_layer+1);
         //上一层每个神经元
-        int _b_start_cur = get_b_start(cur_layer);
-        int _b_start_next = get_b_start(cur_layer+1);
-        int _w_start_cur = get_w_start(cur_layer);
-        int _w_start_next = get_w_start(cur_layer+1);
-        int _x_start_cur = get_x_start(cur_layer);
-        int _y_start_pre = get_y_start(cur_layer-1);
+        const int _b_start_cur = get_b_start(cur_layer);
+        const int _b_start_next = get_b_start(cur_layer+1);
+        const int _w_start_cur = get_w_start(cur_layer);
+        const int _w_start_next = get_w_start(cur_layer+1);
+        const int _x_start_cur = get_x_start(cur_layer);
+        const int _y_start_pre = get_y_start(cur_layer-1);
+        //先计算d_bias
+        for (int cur_hidden_cell=0; cur_hidden_cell<cur_layer_size; ++cur_hidden_cell) {
+            double sum = 0.;
+            for (int next_hidden_cell=0; next_hidden_cell<next_layer_size; ++next_hidden_cell) {
+                sum += d_bias[_b_start_next+next_hidden_cell]
+                        *weights[_w_start_next+cur_hidden_cell*next_layer_size+next_hidden_cell];
+            }
+            d_bias[_b_start_cur+cur_hidden_cell] = sum*active_deri(vals[_x_start_cur+cur_hidden_cell]);
+        }
 
+        //计算d_weights
         for (int pre_hidden_cell=0; pre_hidden_cell<pre_layer_size; ++pre_hidden_cell) {
             //与当前层每个神经元连接的权重
             for (int cur_hidden_cell=0; cur_hidden_cell<cur_layer_size; ++cur_hidden_cell) {
-                double sum = 0.;
-                for (int next_hidden_cell=0; next_hidden_cell<next_layer_size; ++next_hidden_cell) {
-                    sum += d_bias[_b_start_next+next_hidden_cell]
-                            *weights[_w_start_next+cur_hidden_cell*next_layer_size+next_hidden_cell];
-                }
-                d_bias[_b_start_cur+cur_hidden_cell] = sum*active_deri(vals[_x_start_cur+cur_hidden_cell]);
                 d_weights[_w_start_cur+pre_hidden_cell*cur_layer_size+cur_hidden_cell]
                         =d_bias[_b_start_cur+cur_hidden_cell]*vals[_y_start_pre+pre_hidden_cell];
             }
@@ -178,13 +153,16 @@ void BP::bf_hidden2_input() {
 
 void BP::backword_flow() {
     bf_output_hidden1();
-    bf_hidden1_hidden2();
-    if (n_layers == 3) return;
-    bf_hidden2_input();
+    bf_hidden1_input();
 }
 
 double BP::active(double x) {
-    if (activation == string("sigmoid")) return 1.0/(1+exp(-x));
+    if (activation == string("sigmoid")) {
+        return 1.0/(1+exp(-x));
+        //if (x<=-20) return 0.999999999999;
+        //else if (x >=20) return 0.0000000000001;
+        //else return sigmoid_table[int((x+20)*100)];
+    }
     if (activation == string("ReLu")) return x>0?x:0;
     else {
         return x;
@@ -237,6 +215,7 @@ void BP::get_loss() {
     for (int i=0; i<output_layer_size; ++i) {
         cur_loss += (Y[i]-vals[_y_start_output+i])*(Y[i]-vals[_y_start_output+i]);
     }
+    cur_loss/=2.0;
 }
 
 void BP::train(int _batch, int _max_itr_all,
@@ -251,11 +230,15 @@ void BP::train(int _batch, int _max_itr_all,
     activation = _activation;
     verbose = _verbose;
 
+    mt19937_64 gen;
+    uniform_int_distribution<int> gen_random_int(0, int(train_X.size())-1);
 
+    if (GD == string("SGD")) {
     for (int k=0; k<max_itr_all; ++k) {
         for (int i=0; i<(int)train_X.size(); ++i) {
-            set_X(train_X[i]);
-            set_Y(train_Y[i]);
+            int r_index = gen_random_int(gen);
+            set_X(train_X[r_index]);
+            set_Y(train_Y[r_index]);
             int __itr = 0;
             cur_loss = DBL_MAX_10_EXP;
             while (cur_loss > min_loss && __itr<max_itr_batch) {
@@ -264,12 +247,54 @@ void BP::train(int _batch, int _max_itr_all,
                 get_loss();
                 if (verbose) {
                     cout <<"\tglobal_itr:"<<k+1<<"/"<<max_itr_all
-                         <<"\tlocal_itr:"<<i+1<<"/"<<(int)train_X.size()<< "\tcur loss:" << cur_loss <<endl;
+                         <<"\tcur_items:"<<i+1<<"/"<<(int)train_X.size()<<"\tlocal_itr:"<<__itr
+                         <<"\tcur loss:" << cur_loss <<endl;
                 }
                 backword_flow();
                 update_weights_bias();
             }
         }
+    }}
+    else if (GD == string("BGD")) {
+    //int _output_layer_size = get_layer_neurals(-1);
+    int weights_num = int(weights.size());
+    int bias_num = int(bias.size());
+    for (int k=0; k<max_itr_all; ++k) {
+        int batches = train_X.size()/batch;
+        for (int i=0; i<batches; ++i) {
+            int __itr = 0;
+            double loss_batch = DBL_MAX_10_EXP;
+            while (loss_batch > min_loss && __itr<max_itr_batch) {
+            vector<double> d_bias_batch(bias_num, 0);
+            vector<double> d_weights_batch(weights_num, 0);
+            loss_batch = 0.;
+            for (int j=0; j<batch; ++j) {
+                int r_index = gen_random_int(gen);
+                set_X(train_X[r_index]);
+                set_Y(train_Y[r_index]);
+                forword_flow();
+                get_loss();
+                loss_batch += cur_loss/batch;
+                backword_flow();
+                for (int _w=0; _w<weights_num; ++_w) d_weights_batch[_w]+=d_weights[_w]/batch;
+                for (int _b=0; _b<bias_num; ++_b) d_bias_batch[_b]+=d_bias[_b]/batch;
+            }
+            for (int _w=0; _w<weights_num; ++_w) d_weights[_w] = d_weights_batch[_w];
+            for (int _b=0; _b<bias_num; ++_b) d_bias[_b] = d_bias_batch[_b];
+            update_weights_bias();
+            ++__itr;
+            if (verbose) {
+                cout <<"\tglobal_itr:"<<k+1<<"/"<<max_itr_all
+                     <<"\tcur_batch:"<<i+1<<"/"<<batches<<"\tlocal_itr:"<<__itr
+                     <<"\tcur loss:" << loss_batch <<endl;
+            }
+            }
+        }
+
+    }}
+    else {
+        cout << "GD error" << endl;
+        exit(0);
     }
 }
 
@@ -292,8 +317,8 @@ void BP::set_train_data(vector<vector<double>> X, vector<vector<double>> Y, doub
 
 void BP::predict(bool _verbose) {
     int correct_answer = 0;
-    int _y_start_output = get_y_start(-1);
-    int output_layer_size = get_layer_neurals(-1);
+    const int _y_start_output = get_y_start(-1);
+    const int output_layer_size = get_layer_neurals(-1);
 
     for (int i=0; i<(int)test_X.size(); ++i) {
         set_X(test_X[i]);
@@ -318,7 +343,11 @@ void BP::predict(bool _verbose) {
     cout << "accuracy:"<<correct_answer/double(test_X.size()) <<endl;
 }
 
-void BP::data_normalization() {
-    data_normal(test_X);
-    data_normal(train_X);
-}
+/*
+void BP::init_sigmoid_table() {
+    double __s = 40.0/4000.0;
+    for (int i=0; i<4000; ++i) {
+        sigmoid_table[i] = 1.0/(1+exp(20-i*__s));
+    }
+    cout << "init sigmoid table finished" <<endl;
+}*/
