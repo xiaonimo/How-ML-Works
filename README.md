@@ -1,9 +1,13 @@
-# Multi-layer-BP
+# Multi-Layer-BP
+### 2018.3.23
 - [x] BP()
 - [x] index()
 - [x] forword_flow()
 - [x] activation()
-- [ ] backword_flow()
-- [ ] train()
-- [ ] predict()
-- [ ] data_normalization()
+- [x] backword_flow()
+- [x] train()
+- [x] predict()
+- [x] data_normalization()
+
+### 2018.3.24
+- [] improve the accuracy while using Mini-BGD
