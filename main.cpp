@@ -1,18 +1,28 @@
 #include "network.h"
 #include "func.h"
 #include <ctime>
-double f(double x) {
-    return 1.0/(1+exp(-x));
-}
+
 
 int main() {
-    BP a(vector<int>{784, 100 ,10});
-
-    vector<vector<double>> X(1000, vector<double>(784, 0));
-    vector<vector<double>> Y(1000, vector<double>(10, 0));
+    vector<vector<double>> X(40000, vector<double>(784, 0));
+    vector<vector<double>> Y(40000, vector<double>(10, 0));
     read_mnist(X, Y, "train.csv");
     data_normal(X);
-    a.set_train_data(X, Y, 0.8);
-    a.train(10, 3, 1000, 0.01, 0.1, "SGD", "sigmoid");
+
+    /*
+    auto t1 = clock();
+    BP a(vector<int>{784, 100, 10});
+    //a.load_model("model1.txt");
+    a.set_train_data(X, Y, 0.9);
+    a.train(10, 10, 1000, 0.01, 0.01, "SGD", "sigmoid");
     a.predict();
+    a.save_model("model_36000.txt");
+    auto t2 = clock();
+    cout << (t2-t1)/1000.;
+    */
+    BP a;
+    a.load_model("model_36000.txt");
+    a.set_train_data(X, Y, 0);
+    a.predict();
+
 }
