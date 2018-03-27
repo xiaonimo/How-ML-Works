@@ -3,6 +3,12 @@
 ## Introductions
 - ### data
   - download from [kaggle](https://www.kaggle.com/c/3004/download/train.csv)
+  - you can read mnist data like this:
+  ```
+    vector<vector<double>> X(40000, vector<double>(784, 0));
+    vector<vector<double>> Y(40000, vector<double>(10, 0));
+    read_mnist(X, Y, "train.csv");
+  ```
 - ### how to train
   - you can use like this:
   ```
