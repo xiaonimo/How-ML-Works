@@ -9,6 +9,10 @@
     vector<vector<double>> Y(40000, vector<double>(10, 0));
     read_mnist(X, Y, "train.csv");
   ```
+  - normalized data like this:
+  ```
+    data_normal(X);
+  ```
 - ### how to train
   - you can use like this:
   ```
