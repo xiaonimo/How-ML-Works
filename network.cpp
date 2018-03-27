@@ -35,6 +35,9 @@ BP::BP(vector<int> l){
     vals = vector<double>(2*(sum_bias+layers[0]), 0);
 
     init_weights_bias();
+
+    sigmoid_table = vector<double>(4000, 0.);
+    init_sigmoid_table();
 }
 
 void BP::init_weights_bias() {
@@ -158,10 +161,12 @@ void BP::backword_flow() {
 
 double BP::active(double x) {
     if (activation == string("sigmoid")) {
-        return 1.0/(1+exp(-x));
-        //if (x<=-20) return 0.999999999999;
-        //else if (x >=20) return 0.0000000000001;
-        //else return sigmoid_table[int((x+20)*100)];
+        //return 1.0/(1+exp(-x));
+
+        if (x>=20) return 0.999999999999;
+        else if (x <= -20) return 0.0000000000001;
+        else return sigmoid_table[int((x+20)*100)];
+
     }
     if (activation == string("ReLu")) return x>0?x:0;
     else {
@@ -324,7 +329,7 @@ void BP::predict(bool _verbose) {
         set_X(test_X[i]);
         set_Y(test_Y[i]);
         forword_flow();
-        //get_loss();
+        get_loss();
         int pred=0, real=0;
         double p=vals[_y_start_output], r=Y[0];
         for (int k=1; k<output_layer_size; ++k) {
@@ -343,11 +348,112 @@ void BP::predict(bool _verbose) {
     cout << "accuracy:"<<correct_answer/double(test_X.size()) <<endl;
 }
 
-/*
+
 void BP::init_sigmoid_table() {
     double __s = 40.0/4000.0;
     for (int i=0; i<4000; ++i) {
         sigmoid_table[i] = 1.0/(1+exp(20-i*__s));
     }
     cout << "init sigmoid table finished" <<endl;
-}*/
+}
+
+void BP::save_model(string filename) {
+    ofstream fw(filename);
+    if (!fw.is_open()) {
+        cout << filename << " not opened!" <<endl;
+        exit(0);
+    }
+    //保存网络结构
+    for (int i=0; i<n_layers; ++i) {
+        fw << layers[i];
+        if (i!=n_layers-1) fw <<",";
+        else fw << endl;
+    }
+    //保存激活函数
+    fw << activation <<endl;
+    //保存权重
+    for (int i=0; i<(int)weights.size(); ++i) {
+        fw << weights[i];
+        if (i!=(int)weights.size()-1) fw<<",";
+        else fw<<endl;
+    }
+    //保存bias
+    for (int i=0; i<(int)bias.size(); ++i) {
+        fw << bias[i];
+        if (i!=(int)bias.size()-1) fw<<",";
+        else fw<<endl;
+    }
+    fw.close();
+}
+
+void BP::load_model(string filename) {
+    ifstream fin(filename);
+    if (!fin.is_open()) {
+        cout <<filename << " not opened!" <<endl;
+        exit(0);
+    }
+    //读取layer信息
+    vector<int> layer;
+    string line;
+    getline(fin, line);
+    istringstream lin(line);
+    string val;
+    while (getline(lin, val, ',')) {
+        int _n;
+        stringstream ss(val);
+        ss>>_n;
+        layer.push_back(_n);
+    }
+
+    //创建对象
+    BP m(layer);
+
+    //读取激活函数信息
+    getline(fin, line);
+    m.activation = line;
+
+    //读取weights信息
+    getline(fin, line);
+    istringstream lin2(line);
+    int i=0;
+    while (getline(lin2, val, ',')) {
+        double _w;
+        stringstream ss(val);
+        ss >> _w;
+        m.weights[i++] = _w;
+    }
+
+    //读取bias信息
+    getline(fin, line);
+    istringstream lin3(line);
+    i=0;
+    while (getline(lin3, val, ',')) {
+        double _w;
+        stringstream ss(val);
+        ss >> _w;
+        m.bias[i++] = _w;
+    }
+    *this = m;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

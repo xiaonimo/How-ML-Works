@@ -6,10 +6,13 @@
 #include <random>
 #include <assert.h>
 #include <cfloat>
+#include <fstream>
+#include <sstream>
 #include "func.h"
 
 class BP {
 public:
+    BP(){}
     BP(vector<int> l);
 
     void set_train_data(vector<vector<double>>, vector<vector<double>>, double r=0.8);
@@ -17,6 +20,8 @@ public:
                double _learning_rate=0.01, double _min_loss=0.1, string _GD="SGD", string _activation="sigmoid",
                bool _verbose=true);
     void predict(bool _verbose=true);
+    void save_model(string);
+    void load_model(string);
 
 public:
     vector<vector<double>> train_X, train_Y;
@@ -57,6 +62,9 @@ private:
     vector<double> X, Y;            //当前传播的XY
     void set_X(vector<double>);
     void set_Y(vector<double>);
+
+    vector<double> sigmoid_table;
+    void init_sigmoid_table();
 
 private:
     int batch;                      //各种超参数

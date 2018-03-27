@@ -5,6 +5,10 @@ void read_mnist(vector<vector<double>>& X, vector<vector<double>>& Y, string fil
     int num = X.size();
 
     ifstream fin(filename);
+    if (!fin.is_open()) {
+        cout<< "file not open";
+        exit(0);
+    }
 
     for (int i=0; i<num; ++i) {
         string line;
