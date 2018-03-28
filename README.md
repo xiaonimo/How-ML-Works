@@ -65,3 +65,4 @@
 
 ### 2018.3.28
 - [ ] Momentum
+- [ ] speed up the training process
