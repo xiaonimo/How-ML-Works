@@ -62,3 +62,6 @@
 - [x] save_model()
 - [x] load_model()
 - [x] add a model file("model_36000.txt") which accuracy>**0.99**
+
+### 2018.3.28
+- [ ] Momentum
