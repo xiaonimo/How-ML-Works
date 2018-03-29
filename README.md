@@ -35,7 +35,7 @@
   ```
   - if you want to save the model, you can use like this:
   ```
-  a.save_model("model_36000.txt");
+    a.save_model("model_36000.txt");
   ```
 
 - ### what's in the model file?
@@ -73,4 +73,4 @@
 
 ### 2018.3.29
 - [x] 36000 items to train, 4000 items to test, only one hidden layer with 100 neurals, max_itr_all=10, min_loss=0.01, SGD, **accuracy>0.97**, only cost **10 minutes**(if you want a quick train-process, try to set **verbose=false**)
-- [ ] speed up the read_mnist process(use freopen() and scanf())
+- [x] speed up the read_mnist process(use freopen() and scanf())
