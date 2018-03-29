@@ -4,32 +4,16 @@ void read_mnist(vector<vector<double>>& X, vector<vector<double>>& Y, string fil
     assert(X.size()==Y.size());
     int num = X.size();
 
-    ifstream fin(filename);
-    if (!fin.is_open()) {
-        cout<< "file not open";
-        exit(0);
-    }
-
+    freopen(filename.c_str(), "r", stdin);
+    double val = 0.;
     for (int i=0; i<num; ++i) {
-        string line;
-        getline(fin, line);
-        istringstream lin(line);
-        string str;
-        int j = 0;
-        while (getline(lin, str, ',')) {
-            double val = 0;
-            stringstream ss(str);
-            ss >> val;
-            if (!j) {
-                Y[i][val] = 1;
-                j++;
-            } else {
-                X[i][j-1] = val;
-                j++;
-            }
+        for (int j=0; j<784+1; ++j) {
+            scanf("%lf,", &val);
+            if (j == 0) Y[i][int(val)] = 1;
+            else X[i][j-1] = val;
         }
     }
-    fin.close();
+    fclose(stdin);
     cout << "read mnist data finished" << endl;
 }
 
