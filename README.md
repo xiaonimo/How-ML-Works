@@ -1,5 +1,5 @@
 # Multi-Layer BP Neural Network
-
+## The latest experimental results：*cost 10 minutes to train, accuracy>0.97*
 ## Introductions
 - ### data
   - download from [kaggle](https://www.kaggle.com/c/3004/download/train.csv)
@@ -56,7 +56,7 @@
 - [ ] L2 regularization
 
 ### 2018.3.26
-- [x] 36000 items to train, 4000 items to test, only one hidden layer with 100 neurals, max_itr_all=10, min_loss=0.01, SGD, **accuracy>0.97**, cost about **5 hours**(what a waste of time!)
+- [x] 36000 items to train, 4000 items to test, only one hidden layer with 100 neurals, max_itr_all=10, min_loss=0.01, SGD, **accuracy>0.97**, ~~cost about **5 hours**(what a waste of time!)~~
 
 ### 2018.3.27
 - [x] save_model()
@@ -65,4 +65,8 @@
 
 ### 2018.3.28
 - [ ] Momentum
-- [ ] speed up the training process
+- [x] speed up the training process
+
+### 2018.3.29
+- [x] 36000 items to train, 4000 items to test, only one hidden layer with 100 neurals, max_itr_all=10, min_loss=0.01, SGD, **accuracy>0.97**, only cost **10 minutes**(why?Bacause l deleted many 'cout code')
+- [ ] speed up the read_mnist process(use freopen() and scanf())
