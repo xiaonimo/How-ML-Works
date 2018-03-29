@@ -1,5 +1,9 @@
 # Multi-Layer BP Neural Network
-## The latest experimental results：*cost 10 minutes to train, accuracy>0.97*
+
+## The latest MNIST experimental results：
+- cost **10** minutes to train
+- accuracy>**0.97**
+
 ## Introductions
 - ### data
   - download from [kaggle](https://www.kaggle.com/c/3004/download/train.csv)
@@ -36,7 +40,7 @@
 
 - ### what's in the model file?
   - from input layer to output layer, how may neurals in each layer
-  - activation(sigmoid ro relu)
+  - activation(sigmoid or relu)
   - Weights
   - Bias
 
