@@ -72,5 +72,5 @@
 - [x] speed up the training process
 
 ### 2018.3.29
-- [x] 36000 items to train, 4000 items to test, only one hidden layer with 100 neurals, max_itr_all=10, min_loss=0.01, SGD, **accuracy>0.97**, only cost **10 minutes**(why?Bacause l deleted many 'cout code')
+- [x] 36000 items to train, 4000 items to test, only one hidden layer with 100 neurals, max_itr_all=10, min_loss=0.01, SGD, **accuracy>0.97**, only cost **10 minutes**(if you want a quick train-process, try to set **verbose=false**)
 - [ ] speed up the read_mnist process(use freopen() and scanf())
