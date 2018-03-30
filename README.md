@@ -1,7 +1,8 @@
 # Multi-Layer BP Neural Network
 
 ## The latest MNIST experimental results：
-- cost **10** minutes to train
+- 36000 MNIST items to train, 4000 to predict
+- cost less than **10** minutes
 - accuracy>**0.97**
 
 ## Introductions
@@ -56,7 +57,7 @@
 - [x] data_normalization()
 
 ### 2018.3.24
-- [ ] improve the accuracy while using Mini-BGD
+- [x] improve the accuracy while using Mini-BGD
 - [ ] L2 regularization
 
 ### 2018.3.26
@@ -68,7 +69,7 @@
 - [x] add a model file("model_36000.txt") which accuracy>**0.99**
 
 ### 2018.3.28
-- [ ] Momentum
+- [x] Momentum
 - [x] speed up the training process
 
 ### 2018.3.29
