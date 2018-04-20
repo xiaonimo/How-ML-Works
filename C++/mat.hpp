@@ -13,6 +13,7 @@
 
 
 class Mat {
+public:
     typedef double T;
     typedef std::vector<std::vector<T>> mat_t;
     typedef std::vector<T> vec_t;
@@ -23,8 +24,11 @@ public:
     Mat(vec_t _m):rows(1), cols(_m.size()), data(mat_t(1, _m)) {}
     Mat(mat_t _m):rows(_m.size()), cols(_m[0].size()), data(_m) {}
     Mat(int _rows, int _cols, T _val=T(0)):rows(_rows), cols(_cols), data(mat_t(_rows, vec_t(_cols, _val))) {}
+    Mat(const Mat& x):rows(x.rows),cols(x.cols), data(x.data){}
+    Mat& operator =(const Mat &x) {rows=x.rows; cols=x.cols; data=x.data;return *this;}
 
     void print();                               //打印矩阵
+    void shape() {std::cout << rows << "*" << cols <<std::endl;}
 
     Mat operator *(const Mat&) const;                 //矩阵行列式计算
     Mat operator *(const T) const;                    //数乘
@@ -46,8 +50,8 @@ public:
     bool isEmpty() const {return rows==0 || cols==0;}
 
 public:
-    const unsigned int rows;                             //矩阵行数
-    const unsigned int cols;                             //矩阵列数
+    unsigned int rows;                             //矩阵行数
+    unsigned int cols;                             //矩阵列数
     mat_t data;                                 //用二维vector数组存储矩阵元素
 };
 
@@ -142,7 +146,6 @@ Mat Mat::inverse() {
 }
 
 Mat Mat::mul(const Mat& b) const {
-    if (cols != b.rows) throw std::invalid_argument("rows == cols!");
     if (this->isEmpty() || b.isEmpty()) throw std::invalid_argument("mat is empty");
 
     Mat res(rows, cols);
