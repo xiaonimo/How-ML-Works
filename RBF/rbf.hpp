@@ -15,7 +15,6 @@ public:
         bias = std::vector<double>(n_output);
         o1 = std::vector<double>(n_hidden);
         o2 = std::vector<double>(n_output);
-        delta = std::vector<double>(n_output);
     }
     void train();
     std::vector<std::size_t> predict(const points_t&);
@@ -50,7 +49,7 @@ private:
     std::vector<double> o1, o2, delta; //隐含层和输出层的输出结果
     double cur_loss;
     bool verbose;
-    double learning_rate = 0.0001;
+    double learning_rate = 0.01;
     double min_loss = 0.0001;
     std::vector<double> exp_table;
 };
@@ -174,40 +173,52 @@ rbf::train() {
 
     // SGD
     /*
-    for (index_t i=0; i<train_x.size(); ++i) {
-        set_X(i); set_Y(i);
-        int itr = 0;
-        //cur_loss = std::numeric_limits<double>::max();
+    int itr_all = 0;
+    while (itr_all++ < 100) {
         auto t1 = clock();
-        forword_flow();
-        update_loss();
-        while (itr++ < 500 && cur_loss > min_loss) {
-            backword_flow();
-            _forword_flow();
+        for (index_t i=0; i<train_x.size(); ++i) {
+            set_X(i); set_Y(i);
+            int itr = 0;
+            forword_flow();
             update_loss();
-            //std::cout << cur_loss <<std::endl;
+            while (itr++ < 500 && cur_loss > min_loss) {
+                backword_flow();
+                _forword_flow();
+                update_loss();
+            }
         }
         auto t2 = clock();
-        if (verbose) std::cout << "itr:" << i << " loss:" << cur_loss << " time:" <<
-                                  (t2-t1)/double(CLOCKS_PER_SEC)<< " " << o2[0] << "/" << train_y[y_index][0] <<std::endl;
+        if(verbose) {
+            std::cout << "itr:"<<itr_all+1 << " loss:"<< cur_loss <<" time:" << (t2-t1)/double(CLOCKS_PER_SEC) <<std::endl;
+        }
     }*/
 
     //BGD
-    int itr = 0;
-    while (itr++ < 10){
-        index_t batch = 1;
-        index_t epoch = train_x.size()/batch;
-        for (index_t e=0; e<epoch; ++e) {
+    const index_t epoch = 1000;
+    const index_t batch = 10;
+    const index_t step = train_x.size()/batch;
+    auto tmp = std::vector<point_t>(batch, point_t(n_hidden, 0));
+    for (index_t e=0; e<epoch; ++e) {
+        auto t1 = clock();
+        for (index_t s=0; s<step; ++s) {
+            //先保存中间结果
+            for (index_t b=0; b<batch; ++b) {
+                set_X(batch*s+b); //set_Y(batch*s+b);
+                forword_flow();
+                tmp[b] = o1;
+            }
             int __itr = 0;
-            while (__itr++ < 50) {
+            cur_loss = min_loss+1;
+            while (__itr++ < 500 && cur_loss>min_loss) {
                 cur_loss = 0;
+                delta = std::vector<double>(n_output, 0);
+
                 for (index_t b=0; b<batch; ++b) {
-                    set_X(batch*e+b); set_Y(batch*e+b);
-                    forword_flow();
-                    //cur_loss += o2[0] - train_y[y_index][0];
+                    o1 = tmp[b];
+                    _forword_flow();
                     for (index_t i=0; i<n_output; ++i) {
-                        delta[i] += o2[i] - train_y[y_index][i];
-                        cur_loss += std::pow(delta[i], 2);
+                        delta[i] += (o2[i] - train_y[batch*s+b][i])/batch;
+                        cur_loss += std::pow(delta[i], 2)/batch;
                     }
                 }
                 for (index_t i=0; i<n_hidden; ++i) {
@@ -215,9 +226,10 @@ rbf::train() {
                         weights[i][j] -= learning_rate*(delta[j])*o1[i];
                     }
                 }
-                std::cout << "itr:" <<itr <<" epoch:" << e << " loss:" <<cur_loss <<std::endl;
             }
         }
+        auto t2 = clock();
+        std::cout << "epoch:" << e+1 << " loss:"<<cur_loss <<" time:"<<(t2-t1)/double(CLOCKS_PER_SEC) << std::endl;
     }
 }
 
