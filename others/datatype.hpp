@@ -9,4 +9,6 @@ typedef std::vector<point_t> points_t;
 typedef std::size_t index_t;
 typedef std::vector<index_t> indexes_t;
 
+typedef std::vector<data_t> vec_t;
+
 #endif // DATATYPE_HPP
