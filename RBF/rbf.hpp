@@ -3,78 +3,80 @@
 
 #include <iomanip>
 #include <random>
+#include <initializer_list>
 #include "datatype.hpp"
 #include "kmeans.hpp"
 
 class rbf {
 public:
-    rbf(const points_t& _train_x, const points_t& _train_y, unsigned _n_input, unsigned _n_hidden, unsigned _n_output, bool _verbose=true):
-       train_x(_train_x), train_y(_train_y), n_input(_n_input), n_hidden(_n_hidden), n_output(_n_output), verbose(_verbose){
-        rs = std::vector<double>(n_hidden);
-        weights = std::vector<std::vector<double>>(n_hidden, std::vector<double>(n_output));
-        bias = std::vector<double>(n_output);
+    rbf(const points_t& _train_x, const points_t& _train_y, std::initializer_list _net, unsigned _epoch, unsigned _batch, bool _verbose=true):
+       train_x(_train_x), train_y(_train_y), n_input(_net[0]), n_hidden(_net[1]), n_output(_net[2]),
+       epoch(_epoch), batch(_batch), step(train_x.size()/batch), verbose(_verbose){
+
+        weights = points_t(n_hidden, point_t(n_output));
+        bias = vec_t(n_output);
+        centers = points_t(n_hidden, point_t(n_input));
+        gammas = vec_t(n_hidden);
         o1 = std::vector<double>(n_hidden);
         o2 = std::vector<double>(n_output);
+        init_weights_bias();
     }
-    void train();
-    std::vector<std::size_t> predict(const points_t&);
-    std::vector<point_t> predict_regression(const points_t&);
+    void fit();
+    indexes_t predict(const points_t&);
+    std::vector<vec_t> predict_regression(const points_t&);
 
 private:
     void set_X(index_t x) {x_index = x;}
     void set_Y(index_t y) {y_index = y;}
     void forword_flow();
-    void _forword_flow();
+    void _forword_flow1();
+    void _forword_flow2();
     void backword_flow();
-    void update_loss();
-    data_t get_r();
-    void cal_r();
-    data_t gaussion(const point_t&, const point_t&);
+    void update_weights();
     data_t gaussion(const point_t&, const point_t&, double);
-    data_t get_dist(const point_t&, const point_t&);
-    std::size_t argmax(const std::vector<double>&);
-    void init_weights_bias();
-    void init_exp_table();
+    data_t dist(const point_t&, const point_t&);
+    index_t argmax(const point_t&);
+    void init_weights();
 
 private:
-    std::size_t x_index, y_index;
+    index_t x_index, y_index;
     const points_t& train_x;
     const points_t& train_y;
     unsigned n_input, n_hidden, n_output;
-    points_t c;
-    double r;
-    std::vector<double> rs;
-    std::vector<std::vector<double>> weights;
-    std::vector<double> bias;
-    std::vector<double> o1, o2, delta; //隐含层和输出层的输出结果
+    points_t centers;
+    vec_t gammas;
+    std::vector<vec_t> weights;
+    vec_t bias;
+    vec_t o1, o2; //隐含层和输出层的输出结果
+    auto batch_o1 = points_t(batch, point_t(n_hidden, 0));
+    auto batch_dw = points_t(n_hidden, point_t(n_output, 0));
+    auto batch_db = vec_t(n_output, 0);
+    auto batch_dc = points_t(n_hidden, point_t(n_input, 0));
+    auto batch_dr = vec_t(n_hidden, 0);
+
+public:
     double cur_loss;
     bool verbose;
-    double learning_rate = 0.01;
-    double min_loss = 0.0001;
-    std::vector<double> exp_table;
+    double learning_rate = 0.1;
+    double min_loss = 0.01;
+    unsigned epoch;
+    unsigned batch;
+    unsigned step;
 };
-
-void
-rbf::init_exp_table() {
-
-}
 
 void
 rbf::init_weights_bias() {
     std::mt19937 gen;
     std::normal_distribution<double> normal(0, 0.0001);
+    for(auto &_c:centers) for(auto &_e:_c) _e = normal(gen);
+    for(auto &_e:gammas) _e = normal(gen);
     for(auto &_w:weights) for(auto &_e:_w) _e = normal(gen);
     for(auto &_e:bias) _e = normal(gen);
 }
 
-void
-rbf::update_loss() {
-    cur_loss = get_dist(train_y[y_index], o2);
-}
-
-std::size_t
-rbf::argmax(const std::vector<double> &p) {
-    std::size_t res = 0;
+index_t
+rbf::argmax(const point_t &p) {
+    index_t res = 0;
     double _max_v = p[res];
 
     for (index_t i=1; i<p.size(); ++i) {
@@ -86,73 +88,47 @@ rbf::argmax(const std::vector<double> &p) {
 }
 
 double
-rbf::get_dist(const point_t &p1, const point_t &p2) {
+rbf::L2_dist(const point_t &p1, const point_t &p2) {
     double _dist = 0.;
     for (index_t i=0; i<p1.size(); ++i) _dist += pow(p1[i]-p2[i], 2);
     return _dist;
 }
 
+double
+rbf::gaussion(const point_t &p1, const point_t &p2, double r) {
+    return std::exp(-get_dist(p1, p2)/(2*(r*r)));
+}
+
 void
-rbf::cal_r() {
-    rs[0] = get_dist(c[0], c[1]);
-    rs[n_hidden-1] = get_dist(c[n_hidden-1], c[n_hidden-2]);
-    for (index_t i=1; i<n_hidden-1; ++i) {
-        rs[i] = std::max(get_dist(c[i], c[i-1]), get_dist(c[i], c[i+1]));
-    }
+rbf::_forword_flow1() {
     for (index_t i=0; i<n_hidden; ++i) {
-        rs[i] = -1 / (2 * std::pow(rs[i]/std::sqrt(c.size()*2), 2));
+        o1[i] = gaussion(train_x[x_index], centers[i], gammas[i]);
     }
-}
-
-double
-rbf::get_r() {
-    double _max_dist = std::numeric_limits<double>::min();
-    for (index_t i=0; i<c.size(); ++i) {
-        for (index_t j=i+1; j<c.size(); ++j) {
-            double _dist = get_dist(c[i], c[j]);
-            if (_dist > _max_dist) _max_dist = _dist;
-        }
-    }
-    double _r = _max_dist/std::sqrt(2*c.size());
-    return -1/(2*std::pow(_r, 2));
-}
-
-double
-rbf::gaussion(const point_t &p1, const point_t &p2, double _r) {
-    return std::exp(_r*get_dist(p1, p2));
-}
-
-double
-rbf::gaussion(const point_t &p1, const point_t &p2) {
-    return std::exp(r*get_dist(p1, p2));
 }
 
 void
-rbf::_forword_flow() {
+rbf::_forword_flow2() {
     for (index_t i=0; i<n_output; ++i) {
         double sum = 0.;
         for (index_t j=0; j<n_hidden; ++j) {
             sum += o1[j]*weights[j][i];
         }
-        //o2[i] = sum + bias[i];
-        o2[i] = sum;
+        o2[i] = sum + bias[i];
     }
 }
 
 void
 rbf::forword_flow() {
-    for (index_t i=0; i<n_hidden; ++i) {
-        o1[i] = gaussion(train_x[x_index], c[i], r);
-    }
-    _forword_flow();
+    _forword_flow1();
+    _forword_flow2();
 }
 
 void
 rbf::backword_flow() {
-    /* update bias
+    // update bias
     for (index_t i=0; i<n_output; ++i) {
         bias[i] -= learning_rate*(o2[i]-train_y[y_index][i]);
-    }*/
+    }
 
     //update weights
     for (index_t i=0; i<n_hidden; ++i) {
@@ -163,73 +139,72 @@ rbf::backword_flow() {
 }
 
 void
-rbf::train() {
-    //cluster to calculate centers and r;
-    Kmeans k(train_x, n_hidden);
-    k.cluster();
-    c = k.centers;
-    r = get_r();
-    cal_r();
+rbf::update_weights() {
 
-    // SGD
-    /*
-    int itr_all = 0;
-    while (itr_all++ < 100) {
-        auto t1 = clock();
-        for (index_t i=0; i<train_x.size(); ++i) {
-            set_X(i); set_Y(i);
-            int itr = 0;
-            forword_flow();
-            update_loss();
-            while (itr++ < 500 && cur_loss > min_loss) {
-                backword_flow();
-                _forword_flow();
-                update_loss();
-            }
-        }
-        auto t2 = clock();
-        if(verbose) {
-            std::cout << "itr:"<<itr_all+1 << " loss:"<< cur_loss <<" time:" << (t2-t1)/double(CLOCKS_PER_SEC) <<std::endl;
-        }
-    }*/
+}
 
-    //BGD
-    const index_t epoch = 1000;
-    const index_t batch = 10;
-    const index_t step = train_x.size()/batch;
-    auto tmp = std::vector<point_t>(batch, point_t(n_hidden, 0));
+void
+rbf::fit() {
+    double epoch_loss = 0;
     for (index_t e=0; e<epoch; ++e) {
+        epoch_loss = 0;
         auto t1 = clock();
+
         for (index_t s=0; s<step; ++s) {
             //先保存中间结果
             for (index_t b=0; b<batch; ++b) {
-                set_X(batch*s+b); //set_Y(batch*s+b);
-                forword_flow();
-                tmp[b] = o1;
+                set_X(batch*s+b);
+                _forword_flow1();
+                batch_o1[b] = o1;
             }
+
+            //开始迭代
             int __itr = 0;
             cur_loss = min_loss+1;
             while (__itr++ < 500 && cur_loss>min_loss) {
-                cur_loss = 0;
-                delta = std::vector<double>(n_output, 0);
-
-                for (index_t b=0; b<batch; ++b) {
-                    o1 = tmp[b];
-                    _forword_flow();
-                    for (index_t i=0; i<n_output; ++i) {
-                        delta[i] += (o2[i] - train_y[batch*s+b][i])/batch;
-                        cur_loss += std::pow(delta[i], 2)/batch;
-                    }
+                //更新权重
+                for (index_t i=0; i<n_output; ++i) {
+                    bias[i] -= learning_rate*batch_db[i];
                 }
                 for (index_t i=0; i<n_hidden; ++i) {
                     for (index_t j=0; j<n_output; ++j) {
-                        weights[i][j] -= learning_rate*(delta[j])*o1[i];
+                        weights[i][j] -= learning_rate*batch_dw[i][j];
                     }
                 }
-            }
-        }
+
+                //清空batch_dw
+                for (auto &_dw:batch_dw) for (auto &_e:_dw) _e = 0.;
+                for (auto &_e:batch_db) _e=0.;
+                cur_loss = 0;
+
+                //计算敏感项
+                for (index_t b=0; b<batch; ++b) {
+                    o1 = batch_o1[b];
+                    _forword_flow2();
+                    for (index_t i=0; i<n_output; ++i) {
+                        batch_db[i] += o2[i] - train_y[batch*s+b][i];
+                        cur_loss += std::pow(o2[i] - train_y[batch*s+b][i], 2);
+                        for (index_t j=0; j<n_hidden; ++j) {
+                            batch_dw[j][i] += batch_db[i]*o1[j];
+                        }
+                    }
+                }
+                for (index_t i=0; i<n_output; ++i) {
+                    batch_db[i] /= batch;
+                    for (index_t j=0; j<n_hidden; ++j) {
+                        batch_dw[j][i] /= batch;
+                    }
+                }
+
+                //std::cout << cur_loss <<std::endl;
+            }//end while
+            //std::cout << "step:" << s << " loss:" <<cur_loss <<std::endl;
+            //if (s==step-1 || s==0) std::cout << weights[0][0] << " " <<weights[1][0] <<std::endl;
+            epoch_loss += cur_loss;
+        }//end for(step)
+        //std::cout << weights[0][0] << " ------------------------/" <<weights[1][0] <<std::endl;
         auto t2 = clock();
-        std::cout << "epoch:" << e+1 << " loss:"<<cur_loss <<" time:"<<(t2-t1)/double(CLOCKS_PER_SEC) << std::endl;
+        std::cout << "epoch:" << e+1 << " loss:"<<epoch_loss/step <<" time:"<<(t2-t1)/double(CLOCKS_PER_SEC) << std::endl;
     }
 }
 
