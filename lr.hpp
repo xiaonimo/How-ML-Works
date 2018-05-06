@@ -2,29 +2,28 @@
 #define LR_HPP
 
 #include "datatype.hpp"
-#include "mnist.hpp"
+#include "func.hpp"
 #include <random>
 #include <ctime>
 
 
 //二分类
-class LR{
+class LR {
 public:
-    //LR(points_t&x, std::vector<index_t>&y):train_x(x), train_y(y), n_input(0), n_epoch(0), n_batch(0), n_step(0), learning_rate(0), min_loss(0){}
-    LR(points_t& _train_x, std::vector<index_t>& _train_y, const unsigned _epoch=20, const unsigned _batch=5, param_t _learning_rate=0.001, param_t _min_loss=0.01,
-       bool _verbose=true):
-        train_x(_train_x), train_y(_train_y), n_input(train_x[0].size()), n_epoch(_epoch), n_batch(_batch),
-        n_step(train_x.size()/n_batch), learning_rate(_learning_rate), min_loss(_min_loss), verbose(_verbose) {
+    LR(points_t& _train_x, std::vector<index_t>& _train_y, const unsigned _n_epoch=10, const unsigned _n_batch=3,
+       param_t _learning_rate=0.001, param_t _min_loss=0.01, bool _verbose=true):
+        train_x(_train_x), train_y(_train_y), n_input(train_x[0].size()),
+        n_epoch(_n_epoch), n_batch(_n_batch), n_step(train_x.size()/n_batch),
+        learning_rate(_learning_rate), min_loss(_min_loss), verbose(_verbose) {
 
         weights.assign(n_input, 0);
         batch_dw.assign(n_input, 0);
-        bias = 0;
+        bias = 0; db=0;
         init_weights();
     }
     void fit();
     double predict_prob(const point_t&);
-    vec_t predict_prob(const points_t&);
-    LR& operator =(const LR&);
+    vec_t  predict_prob(const points_t&);
 
 public:
     points_t &train_x;
@@ -36,10 +35,8 @@ public:
     const param_t learning_rate;
     const param_t min_loss;
     bool verbose;
-    vec_t weights;
-    vec_t batch_dw;
-    param_t bias;
-    param_t db;
+    vec_t weights, batch_dw;
+    param_t bias, db;
 
 private:
     void init_weights();
@@ -56,31 +53,9 @@ private:
     param_t cur_loss=0, epoch_loss=0;
 };
 
-LR&
-LR::operator =(const LR& p) {
-    /*
-    this->batch_dw = p.batch_dw;
-    this->bias = p.bias;
-    this->db = p.db;
-    this->learning_rate = p.learning_rate;
-    this->min_loss = p.min_loss;
-    this->n_batch = p.n_batch;
-    this->n_epoch = p.n_epoch;
-    this->n_input = p.n_input;
-    this->n_step = p.n_step;
-    this->train_x = p.train_x;
-    this->train_y = p.train_y;
-    this->verbose = p.verbose;*/
-    this->weights = p.weights;
-    return *this;
-}
-
 void
 LR::backword_flow() {
     db += hx - y;
-    //std::cout << y <<"\t" << hx << "\t" << log(hx) << "\t" << log(1-hx) << std::endl;
-    //getchar();
-    //cur_loss += y*log(hx)+(1-y)*log(1-hx);
     cur_loss += std::pow(hx, y)*std::pow(1-hx, 1-y);
     for (index_t i=0; i<n_input; ++i) {
         batch_dw[i] += (hx-y)*train_x[cur_index][i];
@@ -101,12 +76,6 @@ void
 LR::set_XY(index_t index) {
     cur_index = index;
     if (int(train_y[cur_index]) == 1) y=1;
-    /*
-    else if (int(train_y[cur_index][1]) == 1) y=1;
-    else if (int(train_y[cur_index][2]) == 1) y=1;
-    else if (int(train_y[cur_index][3]) == 1) y=1;
-    else if (int(train_y[cur_index][4]) == 1) y=1;
-    */
     else y=0;
 }
 
