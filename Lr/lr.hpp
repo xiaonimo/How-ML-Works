@@ -1,8 +1,8 @@
 #ifndef LR_HPP
 #define LR_HPP
 
-#include "datatype.hpp"
-#include "func.hpp"
+#include "Common/datatype.hpp"
+#include "Common/func.hpp"
 #include <random>
 #include <ctime>
 

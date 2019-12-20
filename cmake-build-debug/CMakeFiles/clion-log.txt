@@ -1,0 +1,4 @@
+/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=/Library/Developer/CommandLineTools/usr/bin/cc -G "CodeBlocks - Unix Makefiles" /Users/nemoztwang/Information/Code/ML-Algorithms
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /Users/nemoztwang/Information/Code/ML-Algorithms/cmake-build-debug

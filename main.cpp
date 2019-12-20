@@ -1,13 +1,9 @@
-#include "RBF.hpp"
-#include "func.hpp"
-#include "Kmeans.hpp"
-#include "LR.hpp"
-#include "mLR.hpp"
-#include "LeNet.hpp"
-#include "mlp.hpp"
+#include "lr.hpp"
 #include <cstdio>
+#include <iostream>
 
 int main() {
+    std::cout << "hello world" << std::endl;
     /*MLP
     const unsigned num = 40000;
     points_t X(num, point_t(784));
@@ -25,7 +21,7 @@ int main() {
     m.fit();
     */
 
-    //LeNet
+    /* LeNet
     const unsigned num = 4000;
 
     std::vector<std::array<std::array<double, 28>, 28>> x28(num);
@@ -57,7 +53,7 @@ int main() {
     auto t3 = clock();
     std::cout << "accuracy:" << double(correct_answer)/test_y.size() << std::endl;
     std::cout << "train time:" << t2-t1 << "\tpredict time:" << t3-t2 << std::endl;
-    //
+    */
 
     /*LR
     const int num = 40000;
